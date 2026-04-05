@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Quản lý chi tiêu cá nhân</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+
+<style>
+:root{--thu:#2e7d32;--chi:#c62828;--bc:#1565c0}
+body{font-family:Arial;background:#f2f4f8;margin:0}
+.hidden{display:none}
+.center{max-width:380px;margin:60px auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 12px rgba(0,0,0,.4)}
+input,select{width:100%;padding:8px;margin:6px 0}
+button{
+ padding:8px 14px;
+ background:#1976d2;
+ color:#fff;
+ border:none;
+ border-radius:6px;
+ cursor:pointer;
+ font-weight:bold;
+ box-shadow:0 4px 6px rgba(0,0,0,.4);
+}
+button:active{transform:translateY(2px)}
+.btn-del{background:#d32f2f}
+.tabs{display:flex;background:#ddd;padding:5px}
+.tabs button{flex:1;font-weight:bold}
+.tabs .thu.active{background:var(--thu)}
+.tabs .chi.active{background:var(--chi)}
+.tabs .bc.active{background:var(--bc)}
+.tab-content{display:none;padding:15px}
+.tab-content.active{display:block}
+.table-container{max-height:240px;overflow:auto}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{border:1px solid #ddd;padding:6px;text-align:center}
+.topbar{display:flex;justify-content:space-between;padding:10px}
+.summary{display:flex;gap:10px;margin-bottom:10px}
+.summary div{
+ flex:1;
+ padding:12px;
+ border-radius:8px;
+ color:#fff;
+ font-weight:bold;
+ text-shadow:1px 1px 2px #000;
+ box-shadow:0 4px 8px rgba(0,0,0,.4);
+}
+.thuBox{background:var(--thu)}
+.chiBox{background:var(--chi)}
+.duBox{background:#555}
+ /* Giảm khoảng cách trong tab Báo cáo */
+#baoCao .summary{
+ margin-bottom: 6px;   /* mặc định đang 10px */
+}
+
+#baoCao select,
+#baoCao input,
+#baoCao button{
+ margin-top: 4px;
+ margin-bottom: 4px;
+}
+
+#baoCao canvas{
+ margin-top: 6px;
+ margin-bottom: 6px;
+}
+ 
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox" class="center">
+<h3>Đăng nhập</h3>
+<input id="loginUser" placeholder="User">
+<input id="loginPass" type="password" placeholder="Password">
+<button onclick="loginUserFunc()">Đăng nhập</button>
+<button onclick="showRegister()">Đăng ký</button>
+<button onclick="showAdmin()">Quản lý tài khoản</button>
+</div>
+
+<!-- REGISTER -->
+<div id="registerBox" class="center hidden">
+<h3>Đăng ký</h3>
+<input id="regUser" placeholder="User">
+<input id="regPass" type="password" placeholder="Password">
+<button onclick="registerUser()">Lưu</button>
+<button onclick="backLogin()">Quay lại</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminBox" class="center hidden">
+<h3>Admin</h3>
+<input id="adminUser" placeholder="admin">
+<input id="adminPass" type="password">
+<button onclick="loginAdmin()">Vào quản lý</button>
+<button onclick="backLogin()">Quay lại</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="center hidden">
+<h3>Danh sách tài khoản</h3>
+<table>
+<thead><tr><th>User</th><th>Xóa</th></tr></thead>
+<tbody id="adminTable"></tbody>
+</table>
+<button onclick="backLogin()">Thoát</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+<div class="topbar">
+<b id="helloUser"></b>
+<button class="btn-del" onclick="logout()">Thoát</button>
+</div>
+
+<div class="tabs">
+<button class="thu active" onclick="openTab('thu',this)">Thu</button>
+<button class="chi" onclick="openTab('chi',this)">Chi</button>
+<button class="bc" onclick="openTab('baoCao',this)">Báo cáo</button>
+</div>
+
+<!-- THU -->
+<div id="thu" class="tab-content active">
+<select id="thuNguon"></select>
+<input id="thuNguonMoi" placeholder="Nguồn thu mới">
+<button onclick="themNguon('thu')">Lưu nguồn</button>
+<button class="btn-del" onclick="xoaNguon('thu')">Xóa nguồn</button>
+
+<input id="thuNoiDung" placeholder="Nội dung">
+<input id="thuTien" type="number" placeholder="Số tiền">
+<input id="thuNgay" type="date">
+<button onclick="luuThu()">Lưu</button>
+
+<div class="table-container">
+<table>
+<thead><tr><th>#</th><th>Nội dung</th><th>Tiền</th><th>Ngày</th><th>Xóa</th></tr></thead>
+<tbody id="bangThu"></tbody>
+</table>
+</div>
+</div>
+
+<!-- CHI -->
+<div id="chi" class="tab-content">
+<select id="chiNguon"></select>
+<input id="chiNguonMoi" placeholder="Mục chi mới">
+<button onclick="themNguon('chi')">Lưu mục</button>
+<button class="btn-del" onclick="xoaNguon('chi')">Xóa mục</button>
+
+<input id="chiNoiDung" placeholder="Nội dung">
+<input id="chiTien" type="number" placeholder="Số tiền">
+<input id="chiNgay" type="date">
+<button onclick="luuChi()">Lưu</button>
+
+<div class="table-container">
+<table>
+<thead><tr><th>#</th><th>Nội dung</th><th>Tiền</th><th>Ngày</th><th>Xóa</th></tr></thead>
+<tbody id="bangChi"></tbody>
+</table>
+</div>
+</div>
+
+<!-- BAO CAO -->
+<div id="baoCao" class="tab-content">
+<div class="summary">
+<div class="thuBox">Thu<br><span id="tongThu">0</span></div>
+<div class="chiBox">Chi<br><span id="tongChi">0</span></div>
+<div class="duBox">Số dư<br><span id="soDu">0</span></div>
+</div>
+
+<select id="bcLoai">
+<option value="all">Thu + Chi</option>
+<option value="thu">Chỉ Thu</option>
+<option value="chi">Chỉ Chi</option>
+</select>
+<input id="bcThang" placeholder="Tháng (1-12)">
+<input id="bcNam" placeholder="Năm">
+<button onclick="xemBaoCao()">Xem</button>
+<canvas id="chart" height="180"></canvas>
+<canvas id="chartLineDay" height="180"></canvas>
+<canvas id="chartBalanceDay" height="180"></canvas>
+<div class="table-container">
+<table>
+<thead><tr><th>Loại</th><th>Nội dung</th><th>Ngày</th><th>Số tiền</th></tr></thead>
+<tbody id="bangBC"></tbody>
+</table>
+</div>
+
+<button onclick="xuatExcel()">Xuất Excel</button>
+</div>
+</div>
+
+<script>
+ 
+/* ===== FIX CHẠY NETLIFY (BẮT BUỘC) ===== */
+const loginBox = document.getElementById('loginBox');
+const registerBox = document.getElementById('registerBox');
+const adminBox = document.getElementById('adminBox');
+const adminPanel = document.getElementById('adminPanel');
+const app = document.getElementById('app');
+
+const helloUser = document.getElementById('helloUser');
+const adminTable = document.getElementById('adminTable');
+
+const thuNguon = document.getElementById('thuNguon');
+const chiNguon = document.getElementById('chiNguon');
+
+const thuNoiDung = document.getElementById('thuNoiDung');
+const thuTien = document.getElementById('thuTien');
+const thuNgay = document.getElementById('thuNgay');
+
+const chiNoiDung = document.getElementById('chiNoiDung');
+const chiTien = document.getElementById('chiTien');
+const chiNgay = document.getElementById('chiNgay');
+
+const bangThu = document.getElementById('bangThu');
+const bangChi = document.getElementById('bangChi');
+const bangBC = document.getElementById('bangBC');
+
+const tongThu = document.getElementById('tongThu');
+const tongChi = document.getElementById('tongChi');
+const soDu = document.getElementById('soDu');
+
+const bcLoai = document.getElementById('bcLoai');
+const bcThang = document.getElementById('bcThang');
+const bcNam = document.getElementById('bcNam');
+/* ===================================== */
+/* ===== FIX BIẾN INPUT (BẮT BUỘC) ===== */
+const loginUser = document.getElementById('loginUser');
+const loginPass = document.getElementById('loginPass');
+
+const regUser = document.getElementById('regUser');
+const regPass = document.getElementById('regPass');
+
+const adminUser = document.getElementById('adminUser');
+const adminPass = document.getElementById('adminPass');
+/* ==================================== */
+const ADMIN_USER='admin',ADMIN_PASS='Minh6688';
+let users=JSON.parse(localStorage.getItem('users')||'{}');
+let currentUser=null;
+let thuList=[],chiList=[],thuNguonList=[],chiNguonList=[];
+let editThu=-1,editChi=-1,chart=null,chartDay=null,chartLineDay=null,chartBalanceDay=null;
+//let chartLineDay = null;
+/* AUTH */
+function showRegister(){loginBox.classList.add('hidden');registerBox.classList.remove('hidden')}
+function showAdmin(){loginBox.classList.add('hidden');adminBox.classList.remove('hidden')}
+function backLogin(){location.reload()}
+function logout(){location.reload()}
+function registerUser(){
+ users[regUser.value]={password:regPass.value,thuList:[],chiList:[],thuNguon:['Lương'],chiNguon:['Ăn uống']};
+ localStorage.setItem('users',JSON.stringify(users));backLogin();
+}
+function loginUserFunc(){
+ let u=users[loginUser.value];
+ if(!u||u.password!==loginPass.value)return alert('Sai');
+ currentUser=loginUser.value;
+ thuList=u.thuList;chiList=u.chiList;
+ thuNguonList=u.thuNguon;chiNguonList=u.chiNguon;
+ loginBox.classList.add('hidden');app.classList.remove('hidden');
+ helloUser.innerText='Xin chào '+currentUser;
+ loadNguon();render();
+}
+
+/* ADMIN */
+function loginAdmin(){
+ if(adminUser.value!==ADMIN_USER||adminPass.value!==ADMIN_PASS)return alert('Sai admin');
+ adminBox.classList.add('hidden');adminPanel.classList.remove('hidden');
+ adminTable.innerHTML='';
+ Object.keys(users).forEach(u=>{
+  adminTable.innerHTML+=`<tr><td>${u}</td><td><button onclick="delUser('${u}')">X</button></td></tr>`;
+ });
+}
+function delUser(u){delete users[u];localStorage.setItem('users',JSON.stringify(users));loginAdmin()}
+
+/* APP */
+function save(){
+ users[currentUser]={...users[currentUser],thuList,chiList,thuNguon:thuNguonList,chiNguon:chiNguonList};
+ localStorage.setItem('users',JSON.stringify(users));
+}
+function loadNguon(){
+ thuNguon.innerHTML=thuNguonList.map(n=>`<option>${n}</option>`).join('');
+ chiNguon.innerHTML=chiNguonList.map(n=>`<option>${n}</option>`).join('');
+}
+function themNguon(l){
+ let i=document.getElementById(l+'NguonMoi');
+ if(!i.value)return;
+ (l==='thu'?thuNguonList:chiNguonList).push(i.value);
+ i.value='';loadNguon();save();
+}
+function xoaNguon(l){
+ let sel = l === 'thu' ? thuNguon : chiNguon;
+ let arr = l === 'thu' ? thuNguonList : chiNguonList;
+
+ let idx = arr.indexOf(sel.value);
+ if(idx === -1) return;   // 🚑 FIX LỖI NETLIFY
+
+ arr.splice(idx,1);
+ loadNguon();
+ save();
+}
+
+/* ====== THÊM CHỨC NĂNG SỬA ====== */
+function loadThuToForm(i){
+ let d=thuList[i];
+ thuNoiDung.value=d.noiDung;
+ thuTien.value=d.tien;
+ thuNgay.value=d.ngay;
+ editThu=i;
+}
+function loadChiToForm(i){
+ let d=chiList[i];
+ chiNoiDung.value=d.noiDung;
+ chiTien.value=d.tien;
+ chiNgay.value=d.ngay;
+ editChi=i;
+}
+/* ================================= */
+
+//function luuThu(){
+// let o={noiDung:thuNoiDung.value,tien:+thuTien.value,ngay:thuNgay.value};
+// editThu>-1?thuList[editThu]=o:thuList.push(o);
+ //editThu=-1;save();render();
+ function luuThu(){
+ let o={noiDung:thuNoiDung.value,tien:+thuTien.value,ngay:thuNgay.value};
+ editThu>-1?thuList[editThu]=o:thuList.push(o);
+ editThu=-1;
+ save();
+ render();
+
+ // ===== RESET FORM THU =====
+ thuNoiDung.value = '';
+ thuTien.value = '';
+ thuNgay.value = '';
+
+}
+//function luuChi(){
+// let o={noiDung:chiNoiDung.value,tien:+chiTien.value,ngay:chiNgay.value};
+// editChi>-1?chiList[editChi]=o:chiList.push(o);
+// editChi=-1;save();render();
+ function luuChi(){
+ let o={noiDung:chiNoiDung.value,tien:+chiTien.value,ngay:chiNgay.value};
+ editChi>-1?chiList[editChi]=o:chiList.push(o);
+ editChi=-1;
+ save();
+ render();
+
+ // ===== RESET FORM CHI =====
+ chiNoiDung.value = '';
+ chiTien.value = '';
+ chiNgay.value = '';
+
+}
+function render(){
+ bangThu.innerHTML=thuList.map((d,i)=>`
+<tr onclick="loadThuToForm(${i})">
+<td>${i+1}</td><td>${d.noiDung}</td><td>${d.tien}</td><td>${d.ngay}</td>
+<td><button class="btn-del" onclick="xoaThu(${i});event.stopPropagation()">X</button></td>
+</tr>`).join('');
+
+ bangChi.innerHTML=chiList.map((d,i)=>`
+<tr onclick="loadChiToForm(${i})">
+<td>${i+1}</td><td>${d.noiDung}</td><td>${d.tien}</td><td>${d.ngay}</td>
+<td><button class="btn-del" onclick="xoaChi(${i});event.stopPropagation()">X</button></td>
+</tr>`).join('');
+}
+function xoaThu(i){thuList.splice(i,1);save();render()}
+function xoaChi(i){chiList.splice(i,1);save();render()}
+function openTab(id,btn){
+ document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+}
+
+/* BAO CAO */
+function xemBaoCao(){
+ let nam=+bcNam.value||new Date().getFullYear();
+ let thang=+bcThang.value;
+ let loai=bcLoai.value;
+ let thuThang=Array(12).fill(0),chiThang=Array(12).fill(0);
+ let t=0,c=0;bangBC.innerHTML='';
+ thuList.forEach(d=>{
+  let dt=new Date(d.ngay);
+  if(dt.getFullYear()==nam && (!thang||dt.getMonth()+1==thang)){
+   thuThang[dt.getMonth()]+=d.tien;t+=d.tien;
+   if(loai!=='chi')bangBC.innerHTML+=`<tr><td>Thu</td><td>${d.noiDung}</td><td>${d.ngay}</td><td>${d.tien}</td></tr>`;
+  }
+ });
+ chiList.forEach(d=>{
+  let dt=new Date(d.ngay);
+  if(dt.getFullYear()==nam && (!thang||dt.getMonth()+1==thang)){
+   chiThang[dt.getMonth()]+=d.tien;c+=d.tien;
+   if(loai!=='thu')bangBC.innerHTML+=`<tr><td>Chi</td><td>${d.noiDung}</td><td>${d.ngay}</td><td>${d.tien}</td></tr>`;
+  }
+ });
+ tongThu.innerText=t;tongChi.innerText=c;soDu.innerText=t-c;
+ // ===== CẢNH BÁO CHI VƯỢT THU =====
+if(c > t){
+ soDu.style.color = '#ff5252';
+ soDu.innerText = (t-c) + ' ⚠️ Vượt chi';
+}else{
+ soDu.style.color = '#00e676';
+}
+ drawChart(thuThang,chiThang);
+ 
+ /* ===== BIỂU ĐỒ THEO NGÀY ===== */
+if(thang){
+ let daysInMonth = new Date(nam, thang, 0).getDate();
+ let thuNgay = Array(daysInMonth).fill(0);
+ let chiNgay = Array(daysInMonth).fill(0);
+
+ thuList.forEach(d=>{
+  let dt=new Date(d.ngay);
+  if(dt.getFullYear()==nam && dt.getMonth()+1==thang){
+   thuNgay[dt.getDate()-1]+=d.tien;
+  }
+ });
+ chiList.forEach(d=>{
+  let dt=new Date(d.ngay);
+  if(dt.getFullYear()==nam && dt.getMonth()+1==thang){
+   chiNgay[dt.getDate()-1]+=d.tien;
+  }
+ });
+
+ let labels = Array.from({length:daysInMonth},(_,i)=>i+1);
+ drawLineDay(labels,thuNgay,chiNgay);
+ drawBalanceDay(labels,thuNgay,chiNgay);
+}
+/* ============================= */
+}
+function drawChart(thu,chi){
+ if(chart)chart.destroy();
+ chart=new Chart(document.getElementById('chart'),{
+  type:'bar',
+  data:{labels:['1','2','3','4','5','6','7','8','9','10','11','12'],
+   datasets:[
+    {label:'Thu',data:thu,backgroundColor:'#2e7d32'},
+    {label:'Chi',data:chi,backgroundColor:'#c62828'}
+   ]}
+ });
+}
+ function drawLineDay(labels,thuNgay,chiNgay){
+ if(chartLineDay) chartLineDay.destroy();
+ chartLineDay = new Chart(document.getElementById('chartLineDay'),{
+  type:'line',
+  data:{
+   labels:labels,
+   datasets:[
+    {
+     label:'Thu',
+     data:thuNgay,
+     borderColor:'#2e7d32',
+     backgroundColor:'rgba(46,125,50,0.2)',
+     tension:0.3
+    },
+    {
+     label:'Chi',
+     data:chiNgay,
+     borderColor:'#c62828',
+     backgroundColor:'rgba(198,40,40,0.2)',
+     tension:0.3
+    }
+   ]
+  },
+  options:{responsive:true}
+ });
+}
+function drawBalanceDay(labels,thuNgay,chiNgay){
+ if(chartBalanceDay) chartBalanceDay.destroy();
+
+ let balance = [];
+ let sum = 0;
+
+ for(let i=0;i<labels.length;i++){
+  sum += (thuNgay[i]||0) - (chiNgay[i]||0);
+  balance.push(sum);
+ }
+
+ chartBalanceDay = new Chart(
+  document.getElementById('chartBalanceDay'),
+  {
+   type:'line',
+   data:{
+    labels:labels,
+    datasets:[
+     {
+      label:'Số dư',
+      data:balance,
+      borderColor:'#1565c0',
+      backgroundColor:'rgba(21,101,192,0.2)',
+      tension:0.3,
+      fill:true
+     }
+    ]
+   },
+   options:{responsive:true}
+  }
+ );
+}
+ 
+function xuatExcel(){
+ let csv="Loai,Noi dung,Ngay,So tien\n";
+ thuList.forEach(d=>csv+=`Thu,${d.noiDung},${d.ngay},${d.tien}\n`);
+ chiList.forEach(d=>csv+=`Chi,${d.noiDung},${d.ngay},${d.tien}\n`);
+ let a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([csv]));
+ a.download='bao_cao.csv';a.click();
+}
+</script>
+</body>
+</html>
