@@ -191,7 +191,7 @@ th,td{border:1px solid #ddd;padding:6px;text-align:center}
 </div>
 </div>
 
-<script>
+<script> defer
  
 /* ===== FIX CHẠY NETLIFY (BẮT BUỘC) ===== */
 const loginBox = document.getElementById('loginBox');
@@ -237,7 +237,12 @@ const adminUser = document.getElementById('adminUser');
 const adminPass = document.getElementById('adminPass');
 /* ==================================== */
 const ADMIN_USER='admin',ADMIN_PASS='Minh6688';
-let users=JSON.parse(localStorage.getItem('users')||'{}');
+let users = {};
+try {
+  users = JSON.parse(localStorage.getItem('users') || '{}');
+} catch(e) {
+  users = {};
+}
 let currentUser=null;
 let thuList=[],chiList=[],thuNguonList=[],chiNguonList=[];
 let editThu=-1,editChi=-1,chart=null,chartDay=null,chartLineDay=null,chartBalanceDay=null;
